@@ -1,5 +1,7 @@
 # Day 11 — Controlled Agent Security (2026)
 
+**Học viên** Nguyễn Hữu Mạnh · **MSSV** 2A202604015 · **Lớp** K5-L3B
+
 > 👤 **Hình thức:** bài tập **cá nhân** (1 người / 1 MSSV).  
 > 🎯 **Mục tiêu:** đóng vai **Blue Team** để học cách xây Guardrails phòng thủ, rồi đóng vai **Red Team** để tấn công agent **Red** hoặc **Red Advance**.  
 > ✅ Làm theo **Checkpoint 1 → 5** trong [`CHECKPOINTS.md`](CHECKPOINTS.md) · nộp theo [`SUBMISSION.md`](SUBMISSION.md).
@@ -138,6 +140,21 @@ Thứ tự làm: **Setup → Blue Team (xây Guardrails phòng thủ) → Red Te
 ---
 
 ## 3. Cách bắt đầu
+
+Sau khi cài dependency và tạo `.env`, chạy từ gốc repo trên Windows.
+
+```powershell
+.\.venv\Scripts\python.exe src/main.py --part 2
+.\.venv\Scripts\python.exe src/main.py --part 3
+.\.venv\Scripts\python.exe -m pytest tests/smoke tests/public -q
+.\.venv\Scripts\python.exe scripts/grade.py --submission-dir . --out outputs/grade_report.json
+```
+
+CP2 chạy kiểm tra cục bộ. CP3 cần `OPENROUTER_API_KEY` trong `.env` và sinh
+`results.json`, `audit_log.json` và `metrics.json` trong `outputs/`.
+Pipeline ghi audit và metrics dựa trên quyết định của các plugin khi xử lý từng yêu cầu.
+Mục rate limit đo số yêu cầu qua được lớp kiểm tra đầu vào ngay trong máy.
+Các câu hỏi banking được cho qua trong nhóm còn lại sẽ gọi model Blue.
 
 **Windows (PowerShell):**
 

@@ -24,7 +24,7 @@ _SRC_DIR = Path(__file__).resolve().parent
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from core.config import setup_api_key
+from core.config import get_blue_model, get_openrouter_api_key, setup_api_key
 
 
 async def part2_guardrails():
@@ -57,28 +57,47 @@ async def part3_assignment_suite():
     print("CHECKPOINT 3: Assignment suite → outputs/*.json")
     print("=" * 60)
 
+    from openai import APIConnectionError, APIStatusError
+
     from assignment.pipeline import (
         build_production_plugins,
         build_observability,
         run_assignment_suite,
     )
 
+    if not get_openrouter_api_key():
+        raise SystemExit("Checkpoint 3 requires OPENROUTER_API_KEY in the local .env.")
+
+    plugins = build_production_plugins(use_llm_judge=False)
+    audit, monitor = build_observability()
+    pipeline = {"plugins": plugins, "audit": audit, "monitor": monitor}
     try:
-        plugins = build_production_plugins(use_llm_judge=False)
-        audit, monitor = build_observability()
-        pipeline = {"plugins": plugins, "audit": audit, "monitor": monitor}
         result = await run_assignment_suite(pipeline)
-        print("Suite finished.")
-        print("Wrote outputs under repo outputs/")
-        return result
-    except NotImplementedError as e:
-        print(
-            "Chưa xong Checkpoint 3 (src/assignment/pipeline.py). "
-            "Hoàn thành rồi chạy lại từ gốc repo:\n"
-            "  python src/main.py --part 3"
-        )
-        print(f"Detail: {e}")
-        return None
+    except APIConnectionError:
+        raise SystemExit(
+            f"CP3 stopped: could not reach OpenRouter or the request timed out "
+            f"for {get_blue_model()}. Retry when the connection is available."
+        ) from None
+    except APIStatusError as error:
+        if error.status_code == 401:
+            raise SystemExit(
+                "CP3 stopped: OpenRouter rejected OPENROUTER_API_KEY. Check the local .env."
+            ) from None
+        if error.status_code in {429, 500, 502, 503, 504}:
+            retry_after = error.response.headers.get("Retry-After", "")
+            retry_hint = (
+                f" Wait at least {retry_after} seconds before trying again."
+                if retry_after.isdecimal()
+                else ""
+            )
+            raise SystemExit(
+                f"CP3 stopped: OpenRouter returned HTTP {error.status_code} "
+                f"for {get_blue_model()}.{retry_hint}"
+            ) from None
+        raise
+    print("Suite finished.")
+    print("Wrote results.json, audit_log.json, and metrics.json under repo outputs/")
+    return result
 
 
 async def part4_attacks():
@@ -134,8 +153,6 @@ async def part4_attacks():
 
 
 async def main(parts=None):
-    setup_api_key()
-
     if parts is None:
         parts = [2, 3, 4]  # Core: CP2 → CP3 → CP4
 
@@ -145,6 +162,7 @@ async def main(parts=None):
         elif part == 3:
             await part3_assignment_suite()
         elif part == 4:
+            setup_api_key()
             await part4_attacks()
         else:
             print(f"Unknown part: {part}. Dùng --part 2, 3, hoặc 4.")

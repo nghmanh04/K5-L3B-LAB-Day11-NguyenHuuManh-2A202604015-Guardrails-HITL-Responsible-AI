@@ -120,6 +120,7 @@ def blue_client_kwargs() -> dict:
             os.environ.get("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL).strip()
             or OPENROUTER_BASE_URL
         ),
+        "timeout": 30.0,
     }
 
 
@@ -269,7 +270,7 @@ ALLOWED_TOPICS = [
     "loan", "interest", "savings", "credit",
     "deposit", "withdrawal", "balance", "payment",
     "tai khoan", "giao dich", "tiet kiem", "lai suat",
-    "chuyen tien", "the tin dung", "so du", "vay",
+    "chuyen tien", "chuyen khoan", "the tin dung", "so du", "vay",
     "ngan hang", "atm",
 ]
 
